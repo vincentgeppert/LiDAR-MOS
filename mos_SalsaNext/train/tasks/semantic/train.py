@@ -16,6 +16,7 @@ from tasks.semantic.modules.SalsaNext import *
 #from tasks.semantic.modules.save_dataset_projected import *
 import math
 from decimal import Decimal
+from torch.utils.tensorboard import SummaryWriter
 
 def remove_exponent(d):
     return d.quantize(Decimal(1)) if d == d.to_integral() else d.normalize()
@@ -50,6 +51,7 @@ if __name__ == '__main__':
         '--dataset', '-d',
         type=str,
         required=True,
+        default=None,
         help='Dataset to train with. No Default',
     )
     parser.add_argument(
@@ -62,7 +64,7 @@ if __name__ == '__main__':
         '--data_cfg', '-dc',
         type=str,
         required=False,
-        default='config/labels/semantic-kitti-mos.yaml',
+        default='config/labels/kitti360_data_cfg_mos.yaml',
         help='Classification yaml cfg file. See /config/labels for sample. No default!',
     )
     parser.add_argument(
@@ -81,13 +83,13 @@ if __name__ == '__main__':
         '--pretrained', '-p',
         type=str,
         required=False,
-        default=None,
+        default="",
         help='Directory to get the pretrained model. If not passed, do from scratch!'
     )
     parser.add_argument(
         '--uncertainty', '-u',
         type=str2bool, nargs='?',
-        const=True, default=True,
+        const=True, default=False,
         help='Set this if you want to use the Uncertainty Version'
     )
 
@@ -174,5 +176,6 @@ if __name__ == '__main__':
         quit()
 
     # create trainer and start the training
-    trainer = Trainer(ARCH, DATA, FLAGS.dataset, FLAGS.log, FLAGS.pretrained,FLAGS.uncertainty)
+    writer = SummaryWriter()
+    trainer = Trainer(writer, ARCH, DATA, FLAGS.dataset, FLAGS.log, FLAGS.pretrained, FLAGS.uncertainty)
     trainer.train()

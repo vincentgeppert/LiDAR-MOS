@@ -50,7 +50,7 @@ class User():
                                       max_points=self.ARCH["dataset"]["max_points"],
                                       batch_size=1,
                                       workers=self.ARCH["train"]["workers"],
-                                      gt=True,
+                                      gt=False,
                                       shuffle_train=False)
 
     # concatenate the encoder and the head
@@ -58,16 +58,23 @@ class User():
         torch.nn.Module.dump_patches = True
         if self.uncertainty:
             self.model = SalsaNextUncertainty(self.parser.get_n_classes())
-            self.model = nn.DataParallel(self.model)
-            w_dict = torch.load(modeldir + "/SalsaNext_valid_best",
+            #self.model = nn.DataParallel(self.model)
+            w_dict = torch.load(modeldir + "/SalsaNext_mos_valid_best",
                                 map_location=lambda storage, loc: storage)
             self.model.load_state_dict(w_dict['state_dict'], strict=True)
         else:
             self.model = SalsaNext(self.parser.get_n_classes(), ARCH)
-            self.model = nn.DataParallel(self.model)
-            w_dict = torch.load(modeldir + "/SalsaNext_valid_best",
+            #self.model = nn.DataParallel(self.model)
+            w_dict = torch.load(modeldir + "/SalsaNext_mos_valid_best",
                                 map_location=lambda storage, loc: storage)
-            self.model.load_state_dict(w_dict['state_dict'], strict=True)
+            #self.model.load_state_dict(w_dict['state_dict'], strict=True)
+            ########
+            # the modules are there but the names are different, delete 'module.' so they match
+            state_dict = w_dict['state_dict']
+            for key in list(state_dict.keys()):
+                state_dict[key.replace('module.', '')] = state_dict.pop(key)
+            self.model.load_state_dict(state_dict, strict=True)
+            ########
 
     # use knn post processing?
     self.post = None
@@ -150,15 +157,18 @@ class User():
 
         #compute output
         if self.uncertainty:
+            # output: outputs_mean, outputs_variance
             proj_output_r,log_var_r = self.model(proj_in)
             for i in range(self.mc):
-                log_var, proj_output = self.model(proj_in)
+                proj_output, log_var = self.model(proj_in)
                 log_var_r = torch.cat((log_var, log_var_r))
                 proj_output_r = torch.cat((proj_output, proj_output_r))
 
             proj_output2,log_var2 = self.model(proj_in)
             proj_output = proj_output_r.var(dim=0, keepdim=True).mean(dim=1)
             log_var2 = log_var_r.mean(dim=0, keepdim=True).mean(dim=1)
+            proj_argmax = proj_output2[0].argmax(dim=0) #prediction
+
             if self.post:
                 # knn postproc
                 unproj_argmax = self.post(proj_range,
@@ -183,11 +193,8 @@ class User():
             # save scan
             # get the first scan in batch and project scan
             pred_np = unproj_argmax.cpu().numpy()
-            pred_np = pred_np.reshape((-1)).astype(np.int32)
-
-            # log_var2 = log_var2[0][p_y, p_x]
-            # log_var2 = log_var2.cpu().numpy()
-            # log_var2 = log_var2.reshape((-1)).astype(np.float32)
+            #pred_np = pred_np.reshape((-1)).astype(np.int32)
+            pred_np = pred_np.reshape((-1)).astype(np.int16)
 
             log_var2 = log_var2[0][p_y, p_x]
             log_var2 = log_var2.cpu().numpy()
@@ -198,15 +205,15 @@ class User():
             pred_np = to_orig_fn(pred_np)
 
             # save scan
-            path = os.path.join(self.logdir, "sequences",
+            path = os.path.join(self.logdir,
                                 path_seq, "predictions", path_name)
             pred_np.tofile(path)
 
-            path = os.path.join(self.logdir, "sequences",
+            path = os.path.join(self.logdir,
                                 path_seq, "log_var", path_name)
-            if not os.path.exists(os.path.join(self.logdir, "sequences",
+            if not os.path.exists(os.path.join(self.logdir,
                                                path_seq, "log_var")):
-                os.makedirs(os.path.join(self.logdir, "sequences",
+                os.makedirs(os.path.join(self.logdir,
                                          path_seq, "log_var"))
             log_var2.tofile(path)
 
@@ -214,18 +221,16 @@ class User():
             proj_output = proj_output.cpu().numpy()
             proj_output = proj_output.reshape((-1)).astype(np.float32)
 
-            path = os.path.join(self.logdir, "sequences",
-                                path_seq, "uncert", path_name)
-            if not os.path.exists(os.path.join(self.logdir, "sequences",
-                                               path_seq, "uncert")):
-                os.makedirs(os.path.join(self.logdir, "sequences",
-                                         path_seq, "uncert"))
+            path = os.path.join(self.logdir, path_seq, "uncert", path_name)
+            if not os.path.exists(os.path.join(self.logdir, path_seq, "uncert")):
+                os.makedirs(os.path.join(self.logdir, path_seq, "uncert"))
             proj_output.tofile(path)
 
             print(total_time / total_frames)
         else:
             proj_output = self.model(proj_in)
             proj_argmax = proj_output[0].argmax(dim=0)
+
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
             res = time.time() - end
@@ -265,12 +270,13 @@ class User():
             # save scan
             # get the first scan in batch and project scan
             pred_np = unproj_argmax.cpu().numpy()
-            pred_np = pred_np.reshape((-1)).astype(np.int32)
+
+            #pred_np = pred_np.reshape((-1)).astype(np.int32)
+            pred_np = pred_np.reshape((-1)).astype(np.int16)
 
             # map to original label
             pred_np = to_orig_fn(pred_np)
 
             # save scan
-            path = os.path.join(self.logdir, "sequences",
-                                path_seq, "predictions", path_name)
+            path = os.path.join(self.logdir, path_seq, "predictions", path_name)
             pred_np.tofile(path)

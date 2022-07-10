@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Developed by Xieyuanli Chen
+# Developed by Xieyuanli Chen and Thomas Läbe
 # This file is covered by the LICENSE file in the root of this project.
 # Brief: some utilities
 
@@ -10,7 +10,7 @@ from scipy.spatial.transform import Rotation as R
 
 np.random.seed(0)
 
-
+#for SemanticKITTI
 def load_poses(pose_path):
   """ Load ground truth poses (T_w_cam0) from file.
     Args:
@@ -55,17 +55,71 @@ def load_calib(calib_path):
           T_cam_velo = np.vstack((T_cam_velo, [0, 0, 0, 1]))
   
   except FileNotFoundError:
-    print('Calibrations are not available.')
+    print('Calibrations are not avaialble.')
   
   return np.array(T_cam_velo)
 
+'''
+#for KITTI360
+def load_poses(pose_path):
+  """ Load ground truth poses (T_w_cam0) from file.
+    Args:
+      pose_path: (Complete) filename for the pose file
+    Returns:
+      A numpy array of size nx4x4 with n poses as 4x4 transformation
+      matrices
+  """
+  # Read and parse the poses
+  poses = []
+  try:
+    if '.txt' in pose_path:
+      with open(pose_path, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+          T_w_cam0 = np.fromstring(line, dtype=float, sep=' ')
+          T_w_cam0 = T_w_cam0[1:]
+          T_w_cam0 = T_w_cam0.reshape(3, 4)
+          T_w_cam0 = np.vstack((T_w_cam0, [0, 0, 0, 1]))
+          poses.append(T_w_cam0)
+    else:
+      poses = np.load(pose_path)['arr_0']
+  
+  except FileNotFoundError:
+    print('Ground truth poses are not available.')
+  
+  return np.array(poses)
 
-def range_projection(current_vertex, proj_H=64, proj_W=900, fov_up=3.0, fov_down=-25.0, max_range=50, min_range=2):
+
+def load_calib(calib_path):
+  """ Load calibrations (T_cam_velo) from file.
+  """
+  # Read and parse the calibrations
+  T_cam_velo = []
+  try:
+    with open(calib_path, 'r') as f:
+      lines = f.readlines()
+      for line in lines:
+        #if 'Tr:' in line:
+          #line = line.replace('Tr:', '')
+          T_cam_velo = np.fromstring(line, dtype=float, sep=' ')
+          T_cam_velo = T_cam_velo.reshape(3, 4)
+          T_cam_velo = np.vstack((T_cam_velo, [0, 0, 0, 1]))
+  
+  except FileNotFoundError:
+    print('Calibrations are not avaialble.')
+  
+  return np.array(T_cam_velo)
+'''
+
+def range_projection(current_vertex, fov_up=3.0, fov_down=-25.0, proj_H=64, proj_W=900, max_range=50):
   """ Project a pointcloud into a spherical projection, range image.
     Args:
       current_vertex: raw point clouds
     Returns:
-      proj_vertex: each pixel contains the corresponding point (x, y, z, depth)
+      proj_range: projected range image with depth, each pixel contains the corresponding depth
+      proj_vertex: each pixel contains the corresponding point (x, y, z, 1)
+      proj_intensity: each pixel contains the corresponding intensity
+      proj_idx: each pixel contains the corresponding index of the point in the raw point cloud
   """
   # laser parameters
   fov_up = fov_up / 180.0 * np.pi  # field of view up in radians
@@ -74,8 +128,8 @@ def range_projection(current_vertex, proj_H=64, proj_W=900, fov_up=3.0, fov_down
   
   # get depth of all points
   depth = np.linalg.norm(current_vertex[:, :3], 2, axis=1)
-  current_vertex = current_vertex[(depth > min_range) & (depth < max_range)]  # get rid of [0, 0, 0] points
-  depth = depth[(depth > min_range) & (depth < max_range)]
+  current_vertex = current_vertex[(depth > 0) & (depth < max_range)]  # get rid of [0, 0, 0] points
+  depth = depth[(depth > 0) & (depth < max_range)]
   
   # get scan components
   scan_x = current_vertex[:, 0]
@@ -99,12 +153,10 @@ def range_projection(current_vertex, proj_H=64, proj_W=900, fov_up=3.0, fov_down
   proj_x = np.floor(proj_x)
   proj_x = np.minimum(proj_W - 1, proj_x)
   proj_x = np.maximum(0, proj_x).astype(np.int32)  # in [0,W-1]
-  proj_x_orig = np.copy(proj_x)
   
   proj_y = np.floor(proj_y)
   proj_y = np.minimum(proj_H - 1, proj_y)
   proj_y = np.maximum(0, proj_y).astype(np.int32)  # in [0,H-1]
-  proj_y_orig = np.copy(proj_y)
   
   # order in decreasing depth
   order = np.argsort(depth)[::-1]
@@ -130,11 +182,11 @@ def range_projection(current_vertex, proj_H=64, proj_W=900, fov_up=3.0, fov_down
                            dtype=np.float32)  # [H,W] index (-1 is no data)
   
   proj_range[proj_y, proj_x] = depth
-  proj_vertex[proj_y, proj_x] = np.array([scan_x, scan_y, scan_z, depth]).T
+  proj_vertex[proj_y, proj_x] = np.array([scan_x, scan_y, scan_z, np.ones(len(scan_x))]).T
   proj_idx[proj_y, proj_x] = indices
   proj_intensity[proj_y, proj_x] = intensity
   
-  return proj_vertex
+  return proj_range, proj_vertex, proj_intensity, proj_idx
 
 
 def gen_normal_map(current_range, current_vertex, proj_H=64, proj_W=900):
@@ -239,21 +291,6 @@ def load_files(folder):
     os.path.expanduser(folder)) for f in fn]
   file_paths.sort()
   return file_paths
-
-
-def load_labels(label_path):
-  """ Load semantic and instance labels in SemanticKitti format.
-  """
-  label = np.fromfile(label_path, dtype=np.uint32)
-  label = label.reshape((-1))
-
-  sem_label = label & 0xFFFF  # semantic label in lower half
-  inst_label = label >> 16  # instance id in upper half
-
-  # sanity check
-  assert ((sem_label + (inst_label << 16) == label).all())
-
-  return sem_label, inst_label
 
 
 def rotation_matrix_from_euler_angles(yaw, degrees=True):

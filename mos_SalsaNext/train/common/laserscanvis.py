@@ -69,7 +69,7 @@ class LaserScanVis:
       self.inst_view.camera = 'turntable'
       self.inst_view.add(self.inst_vis)
       visuals.XYZAxis(parent=self.inst_view.scene)
-      # self.inst_view.camera.link(self.scan_view.camera)
+      self.inst_view.camera.link(self.scan_view.camera)
 
     # img canvas size
     self.multiplier = 1

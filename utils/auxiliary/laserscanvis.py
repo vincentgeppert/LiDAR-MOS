@@ -62,15 +62,15 @@ class LaserScanVis:
       visuals.XYZAxis(parent=self.sem_view.scene)
       # self.sem_view.camera.link(self.scan_view.camera)
 
-    if self.instances:
-      print("Using instances in visualizer")
-      self.inst_view = vispy.scene.widgets.ViewBox(
-          border_color='white', parent=self.canvas.scene)
-      self.grid.add_widget(self.inst_view, 0, 2)
-      self.inst_vis = visuals.Markers()
-      self.inst_view.camera = 'turntable'
-      self.inst_view.add(self.inst_vis)
-      visuals.XYZAxis(parent=self.inst_view.scene)
+    #if self.instances:
+      #print("Using instances in visualizer")
+      #self.inst_view = vispy.scene.widgets.ViewBox(
+      #    border_color='white', parent=self.canvas.scene)
+      #self.grid.add_widget(self.inst_view, 0, 2)
+      #self.inst_vis = visuals.Markers()
+      #self.inst_view.camera = 'turntable'
+      #self.inst_view.add(self.inst_vis)
+      #visuals.XYZAxis(parent=self.inst_view.scene)
       # self.inst_view.camera.link(self.scan_view.camera)
 
     # img canvas size
@@ -79,8 +79,8 @@ class LaserScanVis:
     self.canvas_H = 64
     if self.semantics:
       self.multiplier += 1
-    if self.instances:
-      self.multiplier += 1
+    #if self.instances:
+    #  self.multiplier += 1
 
     # new canvas for img
     self.img_canvas = SceneCanvas(keys='interactive', show=True,
@@ -107,12 +107,12 @@ class LaserScanVis:
       self.sem_img_view.add(self.sem_img_vis)
 
     # add instances
-    if self.instances:
-      self.inst_img_view = vispy.scene.widgets.ViewBox(
-          border_color='white', parent=self.img_canvas.scene)
-      self.img_grid.add_widget(self.inst_img_view, 2, 0)
-      self.inst_img_vis = visuals.Image(cmap='viridis')
-      self.inst_img_view.add(self.inst_img_vis)
+    #if self.instances:
+    #  self.inst_img_view = vispy.scene.widgets.ViewBox(
+    #      border_color='white', parent=self.img_canvas.scene)
+    #  self.img_grid.add_widget(self.inst_img_view, 2, 0)
+    #  self.inst_img_vis = visuals.Image(cmap='viridis')
+    #  self.inst_img_view.add(self.inst_img_vis)
 
   def get_mpl_colormap(self, cmap_name):
     cmap = plt.get_cmap(cmap_name)
@@ -164,11 +164,11 @@ class LaserScanVis:
                             size=1)
 
     # plot instances
-    if self.instances:
-      self.inst_vis.set_data(self.scan.points,
-                             face_color=self.scan.inst_label_color[..., ::-1],
-                             edge_color=self.scan.inst_label_color[..., ::-1],
-                             size=1)
+    #if self.instances:
+    #  self.inst_vis.set_data(self.scan.points,
+    #                         face_color=self.scan.inst_label_color[..., ::-1],
+    #                         edge_color=self.scan.inst_label_color[..., ::-1],
+    #                         size=1)
 
     # now do all the range image stuff
     # plot range image
@@ -187,9 +187,9 @@ class LaserScanVis:
       self.sem_img_vis.set_data(self.scan.proj_sem_color[..., ::-1])
       self.sem_img_vis.update()
 
-    if self.instances:
-      self.inst_img_vis.set_data(self.scan.proj_inst_color[..., ::-1])
-      self.inst_img_vis.update()
+    #if self.instances:
+    #  self.inst_img_vis.set_data(self.scan.proj_inst_color[..., ::-1])
+    #  self.inst_img_vis.update()
 
   # interface
   def key_press(self, event):

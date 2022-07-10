@@ -21,13 +21,13 @@ if __name__ == '__main__':
         '--config', '-c',
         type=str,
         required=False,
-        default="config/labels/semantic-kitti.yaml",
+        default="config/labels/kitti360_data_cfg_mos.yaml",
         help='Dataset config file. Defaults to %(default)s',
     )
     parser.add_argument(
         '--sequence', '-s',
         type=str,
-        default="00",
+        default="3",
         required=False,
         help='Sequence to visualize. Defaults to %(default)s',
     )
@@ -90,11 +90,12 @@ if __name__ == '__main__':
         quit()
 
     # fix sequence name
-    FLAGS.sequence = '{0:02d}'.format(int(FLAGS.sequence))
+    seq_int = int(FLAGS.sequence)
+    #FLAGS.sequence = '2013_05_28_drive_%04d_sync' %seq_int # KITTI-360
+    FLAGS.sequence = '{0:02d}'.format(int(FLAGS.sequence)) #KITTI odometry
 
     # does sequence folder exist?
-    scan_paths = os.path.join(FLAGS.dataset, "sequences",
-                              FLAGS.sequence, "velodyne")
+    scan_paths = os.path.join(FLAGS.dataset, FLAGS.sequence, "velodyne")
     if os.path.isdir(scan_paths):
         print("Sequence folder exists! Using sequence from %s" % scan_paths)
     else:
@@ -109,11 +110,9 @@ if __name__ == '__main__':
     # does sequence folder exist?
     if not FLAGS.ignore_semantics:
         if FLAGS.predictions is not None:
-            label_paths = os.path.join(FLAGS.predictions, "sequences",
-                                       FLAGS.sequence, "predictions")
+            label_paths = os.path.join(FLAGS.predictions, FLAGS.sequence, "predictions")
         else:
-            label_paths = os.path.join(FLAGS.dataset, "sequences",
-                                       FLAGS.sequence, "labels")
+            label_paths = os.path.join(FLAGS.dataset, FLAGS.sequence, "labels")
         if os.path.isdir(label_paths):
             print("Labels folder exists! Using labels from %s" % label_paths)
         else:

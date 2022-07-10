@@ -1,0 +1,52 @@
+name: "kitti360"
+labels: # motion labels
+  0: "unlabeled"
+  1: "static"
+  2: "dynamic"
+color_map: # bgr
+  0: [0, 0, 0]
+  1: [255, 255, 255]
+  2: [0, 0, 255]  
+content: 
+  0: 0.09155961468661394
+  1: 0.9046922012140174
+  2: 0.0037481840993687093
+learning_map:
+  0: 0
+  1: 1
+  2: 2
+learning_map_inv:
+  0: 0
+  1: 1
+  2: 2
+learning_ignore:
+  0: True     #'unlabeled'
+  1: False    #'static'
+  2: False    #'dynamic'
+split: #sequence number
+  train: 
+    - 0
+    - 2
+    - 3
+    - 4
+    - 5
+    - 6
+    - 7
+    - 9
+    - 10
+  valid:
+    - 20
+    - 22
+    - 23
+    - 24
+    - 25
+    - 26
+    - 27
+    - 29
+    - 30
+  test:
+    - 8
+    - 18
+    
+
+    

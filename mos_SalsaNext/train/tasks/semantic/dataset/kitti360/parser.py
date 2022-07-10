@@ -19,11 +19,11 @@ import types
 from collections.abc import Sequence, Iterable
 import warnings
 
-from dataset.kitti.utils import load_poses, load_calib
+from dataset.kitti360.utils_Kitti360 import load_poses, load_calib
+
 
 EXTENSIONS_SCAN = ['.bin']
-EXTENSIONS_LABEL = ['.label']
-#EXTENSIONS_LABEL = ['.bin']
+EXTENSIONS_LABEL = ['.bin']
 EXTENSIONS_RESIDUAL = ['.npy']
 
 
@@ -38,7 +38,7 @@ def is_label(filename):
 def is_residual(filename):
   return any(filename.endswith(ext) for ext in EXTENSIONS_RESIDUAL)
 
-
+ 
 def my_collate(batch):
     data = [item[0] for item in batch]
     project_mask = [item[1] for item in batch]
@@ -52,7 +52,7 @@ def my_collate(batch):
 
     to_augment = (proj_labels == 5).nonzero()
     to_augment_unique_5 = torch.unique(to_augment[:, 0])
-
+ 
     to_augment = (proj_labels == 8).nonzero()
     to_augment_unique_8 = torch.unique(to_augment[:, 0])
 
@@ -66,7 +66,8 @@ def my_collate(batch):
 
     return data, project_mask,proj_labels
 
-class SemanticKitti(Dataset):
+
+class Kitti360(Dataset):
 
   def __init__(self, root,    # directory where data is
                sequences,     # sequences for this data (e.g. [1,3,4,6])
@@ -75,11 +76,11 @@ class SemanticKitti(Dataset):
                learning_map,  # classes to learn (0 to N-1 for xentropy)
                learning_map_inv,    # inverse of previous (recover labels)
                sensor,              # sensor to parse scans from
-               max_points=150000,   # max number of points present in dataset
-               gt=True,             # send ground truth?
-               transform=False):
+               max_points=124792,   # max number of points present in dataset
+               gt=True,
+               transform=False):            # send ground truth?
     # save deats
-    self.root = os.path.join(root, "sequences")
+    self.root = root
     self.sequences = sequences
     self.labels = labels
     self.color_map = color_map
@@ -97,7 +98,7 @@ class SemanticKitti(Dataset):
     self.max_points = max_points
     self.gt = gt
     self.transform = transform
-    
+
     """
     Added stuff for dynamic object segmentation
     """
@@ -120,7 +121,7 @@ class SemanticKitti(Dataset):
 
     # make sure directory exists
     if os.path.isdir(self.root):
-      print("Sequences folder exists! Using sequences from %s" % self.root)
+      print("Using sequences from %s" % self.root)
     else:
       raise ValueError("Sequences folder doesn't exist! Exiting...")
 
@@ -137,41 +138,49 @@ class SemanticKitti(Dataset):
     assert(isinstance(self.sequences, list))
 
     # placeholder for filenames
-    self.scan_files = {}
-    self.label_files = {}
+    self.scan_files = []
+    self.label_files = []
+    self.scan_files_dic = {}
+    self.label_files_dic = {}
+    """"""
     if self.use_residual:
       for i in range(self.n_input_scans):
         exec("self.residual_files_" + str(str(i+1)) + " = {}")
     self.poses = {}
+    """"""
 
     # fill in with names, checking that all sequences are complete
     for seq in self.sequences:
-      # to string
-      seq = '{0:02d}'.format(int(seq))
+      #seq = '2013_05_28_drive_%04d_sync' %seq #KITTI-360
+      seq = '{0:02d}'.format(int(seq)) #KITTI odometry
 
       print("parsing seq {}".format(seq))
 
       # get paths for each
       scan_path = os.path.join(self.root, seq, "velodyne")
       label_path = os.path.join(self.root, seq, "labels")
-      
+
+      """"""
       if self.use_residual:
         for i in range(self.n_input_scans):
           folder_name = "residual_images_" + str(i+1)
           exec("residual_path_" + str(i+1) + " = os.path.join(self.root, seq, folder_name)")
-        
+      """"""
+
       # get files
       scan_files = [os.path.join(dp, f) for dp, dn, fn in os.walk(
           os.path.expanduser(scan_path)) for f in fn if is_scan(f)]
       label_files = [os.path.join(dp, f) for dp, dn, fn in os.walk(
           os.path.expanduser(label_path)) for f in fn if is_label(f)]
-      
+
+      """"""
       if self.use_residual:
         for i in range(self.n_input_scans):
           exec("residual_files_" + str(i+1) + " = " + '[os.path.join(dp, f) for dp, dn, fn in '
                'os.walk(os.path.expanduser(residual_path_' + str(i+1) + '))'
                ' for f in fn if is_residual(f)]')
-        
+      """"""
+
       """
       Get poses and transform them to LiDAR coord frame for transforming point clouds
       """
@@ -181,12 +190,13 @@ class SemanticKitti(Dataset):
       inv_frame0 = np.linalg.inv(poses[0])
 
       # load calibrations
-      calib_file = os.path.join(self.root, seq, "calib.txt")
+      #calib_file = os.path.join(self.root, 'calibration', "calib_cam_to_velo.txt") #Kitti360
+      calib_file = os.path.join(self.root, seq, "calib.txt") #KITTI odometry
       T_cam_velo = load_calib(calib_file)
       T_cam_velo = np.asarray(T_cam_velo).reshape((4, 4))
       T_velo_cam = np.linalg.inv(T_cam_velo)
 
-      # convert kitti poses from camera coord to LiDAR coord
+      # convert poses from camera coord to LiDAR coord
       new_poses = []
       for pose in poses:
         new_poses.append(T_velo_cam.dot(inv_frame0).dot(pose).dot(T_cam_velo))
@@ -195,7 +205,6 @@ class SemanticKitti(Dataset):
       # check all scans have labels
       if self.gt:
         assert(len(scan_files) == len(label_files))
-      
 
       """
       Added for dynamic object segmentation
@@ -208,21 +217,26 @@ class SemanticKitti(Dataset):
         dataset_index += 1
       self.dataset_size += n_used_files
       """"""
-      
       # extend list
       scan_files.sort()
       label_files.sort()
 
-      self.scan_files[seq] = scan_files
-      self.label_files[seq] = label_files
+      self.scan_files_dic[seq] = scan_files
+      self.label_files_dic[seq] = label_files
+
+      self.scan_files.extend(scan_files)
+      self.label_files.extend(label_files)
+      self.scan_files.sort()
+      self.label_files.sort()
 
       if self.use_residual:
         for i in range(self.n_input_scans):
           exec("residual_files_" + str(i+1) + ".sort()")
           exec("self.residual_files_" + str(i+1) + "[seq]" + " = " + "residual_files_" + str(i+1))
-        
-    print("Using {} scans from sequences {}".format(self.dataset_size,
+
+    print("Using {} scans from sequences {}".format(len(self.scan_files),
                                                     self.sequences))
+
 
   def __getitem__(self, dataset_index):
     # Get sequence and start index
@@ -236,17 +250,18 @@ class SemanticKitti(Dataset):
     # for index in range(start_index, start_index + self.n_input_scans):
     for index in range(start_index, start_index + 1):
       # get item in tensor shape
-      scan_file = self.scan_files[seq][index]
+      scan_file = self.scan_files_dic[seq][index]
       if self.gt:
-        label_file = self.label_files[seq][index]
+        label_file = self.label_files_dic[seq][index]
       
       if self.use_residual:
         for i in range(self.n_input_scans):
           exec("residual_file_" + str(i+1) + " = " + "self.residual_files_" + str(i+1) + "[seq][index]")
           
       index_pose = self.poses[seq][index]
-  
+
       # open a semantic laserscan
+      #random if drop_points or not
       DA = False
       flip_sign = False
       rot = False
@@ -260,7 +275,7 @@ class SemanticKitti(Dataset):
               if random.random() > 0.5:
                   rot = True
               drop_points = random.uniform(0, 0.5)
-  
+
       if self.gt:
         scan = SemLaserScan(self.color_map,
                             project=True,
@@ -273,24 +288,24 @@ class SemanticKitti(Dataset):
                             drop_points=drop_points)
       else:
         scan = LaserScan(project=True,
-                         H=self.sensor_img_H,
-                         W=self.sensor_img_W,
-                         fov_up=self.sensor_fov_up,
-                         fov_down=self.sensor_fov_down,
-                         DA=DA,
-                         rot=rot,
-                         flip_sign=flip_sign,
-                         drop_points=drop_points)
-  
+                        H=self.sensor_img_H,
+                        W=self.sensor_img_W,
+                        fov_up=self.sensor_fov_up,
+                        fov_down=self.sensor_fov_down,
+                        DA=DA,
+                        rot=rot,
+                        flip_sign=flip_sign,
+                        drop_points=drop_points)
+
       # open and obtain (transformed) scan
       scan.open_scan(scan_file, index_pose, current_pose, if_transform=self.transform_mod)
-      
+
       if self.gt:
         scan.open_label(label_file)
         # map unused classes to used classes (also for projection)
         scan.sem_label = self.map(scan.sem_label, self.learning_map)
         scan.proj_sem_label = self.map(scan.proj_sem_label, self.learning_map)
-  
+
       # make a tensor of the uncompressed data (with the max num points)
       unproj_n_points = scan.points.shape[0]
       unproj_xyz = torch.full((self.max_points, 3), -1.0, dtype=torch.float)
@@ -300,11 +315,12 @@ class SemanticKitti(Dataset):
       unproj_remissions = torch.full([self.max_points], -1.0, dtype=torch.float)
       unproj_remissions[:unproj_n_points] = torch.from_numpy(scan.remissions)
       if self.gt:
-        unproj_labels = torch.full([self.max_points], -1.0, dtype=torch.int32)
+        unproj_labels = torch.full([self.max_points], -1.0, dtype=torch.int16)
+        #unproj_labels = torch.full([self.max_points], -1.0, dtype=torch.int32)
         unproj_labels[:unproj_n_points] = torch.from_numpy(scan.sem_label)
       else:
         unproj_labels = []
-  
+
       # get points and labels
       proj_range = torch.from_numpy(scan.proj_range).clone()
       proj_xyz = torch.from_numpy(scan.proj_xyz).clone()
@@ -319,15 +335,15 @@ class SemanticKitti(Dataset):
       proj_x[:unproj_n_points] = torch.from_numpy(scan.proj_x)
       proj_y = torch.full([self.max_points], -1, dtype=torch.long)
       proj_y[:unproj_n_points] = torch.from_numpy(scan.proj_y)
-      
+
       if self.use_residual:
         for i in range(self.n_input_scans):
           exec("proj_residuals_" + str(i+1) + " = torch.Tensor(np.load(residual_file_" + str(i+1) + "))")
-        
+
       proj = torch.cat(
           [proj_range.unsqueeze(0).clone(),
-           proj_xyz.clone().permute(2, 0, 1),
-           proj_remission.unsqueeze(0).clone()])
+          proj_xyz.clone().permute(2, 0, 1),
+          proj_remission.unsqueeze(0).clone()])
       proj = (proj - self.sensor_img_means[:, None, None]) / self.sensor_img_stds[:, None, None]
 
       proj_full = torch.cat([proj_full, proj])
@@ -345,7 +361,6 @@ class SemanticKitti(Dataset):
     path_seq = path_split[-3]
     #path_name = path_split[-1].replace(".bin", ".label")
     path_name = path_split[-1]
-
 
     # return
     return proj_full, proj_mask, proj_labels, unproj_labels, path_seq, path_name, proj_x, proj_y, proj_range, \
@@ -369,9 +384,9 @@ class SemanticKitti(Dataset):
         maxkey = key
     # +100 hack making lut bigger just in case there are unknown labels
     if nel > 1:
-      lut = np.zeros((maxkey + 100, nel), dtype=np.int32)
+      lut = np.zeros((maxkey + 100, nel), dtype=np.int16)
     else:
-      lut = np.zeros((maxkey + 100), dtype=np.int32)
+      lut = np.zeros((maxkey + 100), dtype=np.int16)
     for key, data in mapdict.items():
       try:
         lut[key] = data
@@ -389,16 +404,16 @@ class Parser():
                valid_sequences,   # sequences to validate.
                test_sequences,    # sequences to test (if none, don't get)
                split,             # split (train, valid, test)
-               labels,            # labels in data
-               color_map,         # color for each label
-               learning_map,      # mapping for training labels
-               learning_map_inv,  # recover labels from xentropy
-               sensor,            # sensor to use
-               max_points,        # max points in each scan in entire dataset
-               batch_size,        # batch size for train and val
-               workers,           # threads to load data
+               labels,            # labels in data from data config file
+               color_map,         # color for each label from data config file
+               learning_map,      # mapping for training labels from data config file
+               learning_map_inv,  # recover labels from xentropy from data config file
+               sensor,            # sensor to use from arch config file
+               max_points,        # max points in each scan in entire dataset from arch config file
+               batch_size,        # batch size for train and val from arch config file
+               workers,           # threads to load data from arch config file
                gt=True,           # get gt?
-               shuffle_train=False):  # shuffle training set?
+               shuffle_train=True):  # shuffle training set?
     super(Parser, self).__init__()
 
     # if I am training, get the dataset
@@ -423,75 +438,75 @@ class Parser():
 
     # Data loading code
     if self.split == 'train':
-      self.train_dataset = SemanticKitti(root=self.root,
-                                         sequences=self.train_sequences,
-                                         labels=self.labels,
-                                         color_map=self.color_map,
-                                         learning_map=self.learning_map,
-                                         learning_map_inv=self.learning_map_inv,
-                                         sensor=self.sensor,
-                                         max_points=max_points,
-                                         transform=True, # set to True to augment the data
-                                         gt=self.gt)
-  
+      self.train_dataset = Kitti360(root=self.root,
+                                    sequences=self.train_sequences,
+                                    labels=self.labels,
+                                    color_map=self.color_map,
+                                    learning_map=self.learning_map,
+                                    learning_map_inv=self.learning_map_inv,
+                                    sensor=self.sensor,
+                                    max_points=max_points,
+                                    transform=True, # set to True to augment the data
+                                    gt=self.gt)
+
       self.trainloader = torch.utils.data.DataLoader(self.train_dataset,
-                                                     batch_size=self.batch_size,
-                                                     shuffle=self.shuffle_train, 
-                                                     # shuffle=False, # set False to ensure sequential loading
-                                                     num_workers=self.workers,
-                                                     drop_last=True)
+                                                    batch_size=self.batch_size, #how many samples per batch to load
+                                                    shuffle=self.shuffle_train, #set true to have the data reshuffled at every epoch
+                                                    # shuffle=False, # set False to ensure sequential loading
+                                                    num_workers=self.workers, #how many subprocesses to use for data loading, 0 means that the data will be loaded in the main process
+                                                    drop_last=True) #set true to drop the last incomplete batch, if the dataset size is not divisible by the batch size
       assert len(self.trainloader) > 0
-      self.trainiter = iter(self.trainloader)
-
-      self.valid_dataset = SemanticKitti(root=self.root,
-                                         sequences=self.valid_sequences,
-                                         labels=self.labels,
-                                         color_map=self.color_map,
-                                         learning_map=self.learning_map,
-                                         learning_map_inv=self.learning_map_inv,
-                                         sensor=self.sensor,
-                                         max_points=max_points,
-                                         gt=self.gt)
+      self.trainiter = iter(self.trainloader) #returns an iterator for the given object
+      
+      self.valid_dataset = Kitti360(root=self.root,
+                                    sequences=self.valid_sequences,
+                                    labels=self.labels,
+                                    color_map=self.color_map,
+                                    learning_map=self.learning_map,
+                                    learning_map_inv=self.learning_map_inv,
+                                    sensor=self.sensor,
+                                    max_points=max_points,
+                                    gt=self.gt)
 
       self.validloader = torch.utils.data.DataLoader(self.valid_dataset,
-                                                     batch_size=self.batch_size,
-                                                     shuffle=False,
-                                                     num_workers=self.workers,
-                                                     drop_last=True)
+                                                    batch_size=self.batch_size,
+                                                    shuffle=False,
+                                                    num_workers=self.workers,
+                                                    drop_last=True)
       assert len(self.validloader) > 0
       self.validiter = iter(self.validloader)
-
+      
     if self.split == 'valid':
-      self.valid_dataset = SemanticKitti(root=self.root,
-                                         sequences=self.valid_sequences,
-                                         labels=self.labels,
-                                         color_map=self.color_map,
-                                         learning_map=self.learning_map,
-                                         learning_map_inv=self.learning_map_inv,
-                                         sensor=self.sensor,
-                                         max_points=max_points,
-                                         gt=self.gt)
+        self.valid_dataset = Kitti360(root=self.root,
+                                      sequences=self.valid_sequences,
+                                      labels=self.labels,
+                                      color_map=self.color_map,
+                                      learning_map=self.learning_map,
+                                      learning_map_inv=self.learning_map_inv,
+                                      sensor=self.sensor,
+                                      max_points=max_points,
+                                      gt=self.gt)
   
-      self.validloader = torch.utils.data.DataLoader(self.valid_dataset,
-                                                     batch_size=self.batch_size,
-                                                     shuffle=False,
-                                                     num_workers=self.workers,
-                                                     drop_last=True)
-      assert len(self.validloader) > 0
-      self.validiter = iter(self.validloader)
-    
+        self.validloader = torch.utils.data.DataLoader(self.valid_dataset,
+                                                      batch_size=self.batch_size,
+                                                      shuffle=False,
+                                                      num_workers=self.workers,
+                                                      drop_last=True)
+        assert len(self.validloader) > 0
+        self.validiter = iter(self.validloader)
+
     if self.split == 'test':
       if self.test_sequences:
-        self.test_dataset = SemanticKitti(root=self.root,
-                                          sequences=self.test_sequences,
-                                          labels=self.labels,
-                                          color_map=self.color_map,
-                                          learning_map=self.learning_map,
-                                          learning_map_inv=self.learning_map_inv,
-                                          sensor=self.sensor,
-                                          max_points=max_points,
-                                          gt=False)
-  
+        self.test_dataset = Kitti360(root=self.root,
+                                    sequences=self.test_sequences,
+                                    labels=self.labels,
+                                    color_map=self.color_map,
+                                    learning_map=self.learning_map,
+                                    learning_map_inv=self.learning_map_inv,
+                                    sensor=self.sensor,
+                                    max_points=max_points,
+                                    gt=False)
+
         self.testloader = torch.utils.data.DataLoader(self.test_dataset,
                                                       batch_size=self.batch_size,
                                                       shuffle=False,
@@ -541,14 +556,14 @@ class Parser():
 
   def to_original(self, label):
     # put label in original values
-    return SemanticKitti.map(label, self.learning_map_inv)
+    return Kitti360.map(label, self.learning_map_inv)
 
   def to_xentropy(self, label):
     # put label in xentropy values
-    return SemanticKitti.map(label, self.learning_map)
+    return Kitti360.map(label, self.learning_map)
 
   def to_color(self, label):
     # put label in original values
-    label = SemanticKitti.map(label, self.learning_map_inv)
+    label = Kitti360.map(label, self.learning_map_inv)
     # put label in color
-    return SemanticKitti.map(label, self.color_map)
+    return Kitti360.map(label, self.color_map)

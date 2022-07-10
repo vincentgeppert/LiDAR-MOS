@@ -11,9 +11,9 @@ class iouEval:
     self.n_classes = n_classes
 
     # What to include and ignore from the means
-    self.ignore = np.array(ignore, dtype=np.int64)
+    self.ignore = np.array(ignore, dtype=np.int32)
     self.include = np.array(
-        [n for n in range(self.n_classes) if n not in self.ignore], dtype=np.int64)
+        [n for n in range(self.n_classes) if n not in self.ignore], dtype=np.int32)
     print("[IOU EVAL] IGNORE: ", self.ignore)
     print("[IOU EVAL] INCLUDE: ", self.include)
 
@@ -26,7 +26,7 @@ class iouEval:
   def reset(self):
     self.conf_matrix = np.zeros((self.n_classes,
                                  self.n_classes),
-                                dtype=np.int64)
+                                dtype=np.int32)
 
   def addBatch(self, x, y):  # x=preds, y=targets
     # sizes should be matching

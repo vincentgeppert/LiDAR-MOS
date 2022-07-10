@@ -1,0 +1,125 @@
+name: "kitti"
+labels: # mit original IDs
+  0: "unlabeled"
+  1: "ego vehicle"
+  2: "rectification border"
+  3: "out of roi"
+  4: "static"
+  5: "dynamic"
+  6: "ground"
+  7: "road"
+  8: "sidewalk"
+  9: "parking"
+  10: "rail track"
+  11: "building"
+  12: "wall"
+  13: "fence"
+  14: "guard rail"
+  15: "bridge"
+  16: "tunnel"
+  17: "pole"
+  18: "polegroup"
+  19: "traffic light"
+  20: "traffic sign"
+  21: "vegetation"
+  22: "terrain"
+  23: "sky"
+  24: "person"
+  25: "rider"
+  26: "car"
+  27: "truck"
+  28: "bus"
+  29: "caravan"
+  30: "trailer"
+  31: "train"
+  32: "motorcycle"
+  33: "bicycle"
+  34: "garage"
+  35: "gate"
+  36: "stop"
+  37: "smallpole"
+  38: "lamp"
+  39: "trash bin"
+  40: "vending machine"
+  41: "box"
+  42: "unknown construction"
+  43: "unknown vehicle"
+  44: "unknown object"
+  -1: "license plate"
+  200: "moving person"
+  201: "moving rider"
+  202: "moving car"
+  203: "moving truck"
+  204: "moving bus"
+  205: "moving caravan"
+  206: "moving trailer"
+  207: "moving train"
+  208: "moving motorcycle"
+  209: "moving bicycle"
+  210: "moving unknown vehicle"
+mos_semantic_map:
+  0: -1
+  1: -1
+  2: -1
+  3: -1
+  0: 0
+  1: 0
+  2: 0
+  3: 0
+  4: 0
+  5: 1
+  6: 0
+  7: 0
+  8: 0
+  9: 0
+  10: 0
+  11: 0
+  12: 0
+  13: 0
+  14: 0
+  15: 0
+  16: 0
+  17: 0
+  18: 0
+  19: 0
+  20: 0
+  21: 0
+  22: 0
+  23: 0
+  24: 0
+  25: 0
+  26: 0
+  27: 0
+  28: 0
+  29: 0
+  30: 0
+  31: 0
+  32: 0
+  33: 0
+  34: 0
+  35: 0
+  36: 0
+  37: 0
+  38: 0
+  39: 0
+  40: 0
+  41: 0
+  42: 0
+  43: 0
+  44: 0
+  -1: 0
+  200: 1
+  201: 1
+  202: 1
+  203: 1
+  204: 1
+  205: 1
+  206: 1
+  207: 1
+  208: 1
+  209: 1
+  210: 1
+mos_semantic_map_inv:
+  -1: 0
+  0: 4
+  1: 5

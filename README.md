@@ -27,38 +27,20 @@ Complete demo video can be found in YouTube [here](https://youtu.be/NHvsYhk4dhw)
 ## Publication
 If you use our code and benchmark in your academic work, please cite the corresponding [paper](https://www.ipb.uni-bonn.de/pdfs/chen2021ral-iros.pdf):
     
-    @article{chen2021ral,
-		title={{Moving Object Segmentation in 3D LiDAR Data: A Learning-based Approach Exploiting Sequential Data}},
-		author={X. Chen and S. Li and B. Mersch and L. Wiesmann and J. Gall and J. Behley and C. Stachniss},
-		year={2021},
-		volume=6,
-		issue=4,
-		pages={6529-6536},
-		journal={IEEE Robotics and Automation Letters (RA-L)},
-		url = {http://www.ipb.uni-bonn.de/pdfs/chen2021ral-iros.pdf},
-		doi = {10.1109/LRA.2021.3093567},
-		issn = {2377-3766},
-	}
+	@article{chen2021ral,
+        title={{Moving Object Segmentation in 3D LiDAR Data: A Learning-based Approach Exploiting Sequential Data}},
+        author={X. Chen and S. Li and B. Mersch and L. Wiesmann and J. Gall and J. Behley and C. Stachniss},
+        year={2021},
+        journal={IEEE Robotics and Automation Letters (RA-L)},
+        doi = {10.1109/LRA.2021.3093567},
+        issn = {2377-3766},
+    }
 
 
 ## Log
 
-### News 20220706
-Our MotionSeg3D is open-source [here](https://github.com/haomo-ai/MotionSeg3D).
-
-It uses a dual-branch and dual-head structure to fuse Spatial-Temporal information for LiDAR moving object segmentation.
-
-
-### News 20220615
-Our 4DMOS is open-source [here](https://github.com/PRBonn/4DMOS).
-
-It uses sparse CNN on 4D point clouds for LiDAR moving object segmentation.
-
-
 ### v1.1
-Thanks **Jiadai Sun** for testing and correcting some bugs of SalsaNext-MOS.
-
-More setups can also be found here: [#47](https://github.com/PRBonn/LiDAR-MOS/issues/47)
+Thanks **Jiadai Sun** for testing and correcting some bugs of SalsaNext-MOS
 
 ### v1.0
 Open-source version
@@ -90,8 +72,6 @@ To prepare the training data for the whole KITTI-Odometry dataset, please downlo
 
 ### Using SalsaNext as the baseline
 To use SalsaNext as the baseline segmentation network for LiDAR-MOS, one should follow the [mos_SalsaNext/README.md](mos_SalsaNext/README.md) to set it up.
-
-Note that, we use pytorch v1.5.1+cu101 which is different from the original one. More information about the related issue is [here](https://github.com/PRBonn/LiDAR-MOS/issues/24).
 
 #### Inferring
 To generate the LiDAR-MOS predictions with pretrained model with one residual image ([download](https://www.ipb.uni-bonn.de/html/projects/LiDAR-MOS/model_salsanext_residual_1.zip), please `unzip` before using). Quick test on toy dataset, directly run

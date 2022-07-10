@@ -21,7 +21,6 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean expected')
 
-
 if __name__ == '__main__':
     splits = ["train", "valid", "test"]
     parser = argparse.ArgumentParser("./infer.py")
@@ -59,7 +58,6 @@ if __name__ == '__main__':
         help='Number of samplings per scan'
     )
 
-
     parser.add_argument(
         '--split', '-s',
         type=str,
@@ -87,7 +85,7 @@ if __name__ == '__main__':
     # open arch config file
     try:
         print("Opening arch config file from %s" % FLAGS.model)
-        ARCH = yaml.safe_load(open(FLAGS.model + "/arch_cfg.yaml", 'r'))
+        ARCH = yaml.safe_load(open(FLAGS.model + "/kitti360_arch_cfg_mos.yaml", 'r'))
     except Exception as e:
         print(e)
         print("Error opening arch yaml file.")
@@ -96,7 +94,8 @@ if __name__ == '__main__':
     # open data config file
     try:
         print("Opening data config file from %s" % FLAGS.model)
-        DATA = yaml.safe_load(open(FLAGS.model + "/data_cfg.yaml", 'r'))
+        #DATA = yaml.safe_load(open(FLAGS.model + "/data_cfg.yaml", 'r'))
+        DATA = yaml.safe_load(open(FLAGS.model + "/kitti_odometry_data_cfg_mos.yaml", 'r'))
     except Exception as e:
         print(e)
         print("Error opening data yaml file.")
@@ -104,34 +103,34 @@ if __name__ == '__main__':
 
     # create log folder
     try:
-        if os.path.isdir(FLAGS.log):
-            shutil.rmtree(FLAGS.log)
+        FLAGS.log = os.path.join(FLAGS.log, 'SalsaNext_mos')
         os.makedirs(FLAGS.log)
-        os.makedirs(os.path.join(FLAGS.log, "sequences"))
-        for seq in DATA["split"]["train"]:
-            seq = '{0:02d}'.format(int(seq))
-            print("train", seq)
-            os.makedirs(os.path.join(FLAGS.log, "sequences", seq))
-            os.makedirs(os.path.join(FLAGS.log, "sequences", seq, "predictions"))
-        for seq in DATA["split"]["valid"]:
-            seq = '{0:02d}'.format(int(seq))
-            print("valid", seq)
-            os.makedirs(os.path.join(FLAGS.log, "sequences", seq))
-            os.makedirs(os.path.join(FLAGS.log, "sequences", seq, "predictions"))
-        for seq in DATA["split"]["test"]:
-            seq = '{0:02d}'.format(int(seq))
-            print("test", seq)
-            os.makedirs(os.path.join(FLAGS.log, "sequences", seq))
-            os.makedirs(os.path.join(FLAGS.log, "sequences", seq, "predictions"))
+        #os.makedirs(os.path.join(FLAGS.log, "sequences"))
+        if FLAGS.split == 'train':
+            for seq in DATA["split"]["train"]:
+                seq = '{0:02d}'.format(int(seq)) #KITTI odometry
+                #seq = '2013_05_28_drive_%04d_sync' %seq #KITTI-360
+                print("train", seq)
+                os.makedirs(os.path.join(FLAGS.log, seq))
+                os.makedirs(os.path.join(FLAGS.log, seq, "predictions"))
+        if FLAGS.split == 'valid':
+            for seq in DATA["split"]["valid"]:
+                seq = '{0:02d}'.format(int(seq)) #KITTI odometry
+                #seq = '2013_05_28_drive_%04d_sync' %seq #KITTI-360
+                print("valid", seq)
+                os.makedirs(os.path.join(FLAGS.log, seq))
+                os.makedirs(os.path.join(FLAGS.log, seq, "predictions"))
+        if FLAGS.split == 'test':
+            for seq in DATA["split"]["test"]:
+                seq = '{0:02d}'.format(int(seq)) #KITTI odometry
+                #seq = '2013_05_28_drive_%04d_sync' %seq #KITTI-360
+                print("test", seq)
+                os.makedirs(os.path.join(FLAGS.log, seq))
+                os.makedirs(os.path.join(FLAGS.log, seq, "predictions"))
     except Exception as e:
         print(e)
         print("Error creating log directory. Check permissions!")
         raise
-
-    except Exception as e:
-        print(e)
-        print("Error creating log directory. Check permissions!")
-        quit()
 
     # does model folder exist?
     if os.path.isdir(FLAGS.model):
