@@ -42,7 +42,8 @@ if __name__ == '__main__':
   for num_last_n in num_last_n_list:
     for seq in sequences:
       print('{}{}'.format('num_last_n:', num_last_n))
-      seq = '2013_05_28_drive_%04d_sync' %seq #KITTI-360
+      #seq = '2013_05_28_drive_%04d_sync' %seq #KITTI-360
+      seq = '01'
       print('{}{}'.format('Sequence: ', seq))
       scan_folder_seq = os.path.join(scan_folder, seq, 'velodyne') #lidar scans
       pose_file = os.path.join(scan_folder, seq, 'poses.txt') # ground truth poses file

@@ -2,13 +2,17 @@
 # Developed by Xieyuanli Chen
 # This file is covered by the LICENSE file in the root of this project.
 # Brief: This script generates residual images
-
 import os
 import sys
 import yaml
 import numpy as np
 from tqdm import tqdm
+import matplotlib as mpl
+if os.environ.get('DISPLAY','') == '':
+    print('no display found. Using non-interactive Agg backend')
+    mpl.use('Agg')
 import matplotlib.pyplot as plt
+
 
 from utils import load_poses, load_calib, load_files, load_vertex
 
@@ -42,7 +46,7 @@ if __name__ == '__main__':
   for num_last_n in num_last_n_list:
     for seq in sequences:
       print('{}{}'.format('num_last_n:', num_last_n))
-      seq = '{0:02d}'.format(int(seq)) #KITTI odometry
+      seq = '{0:04d}'.format(int(seq)) #KITTI odometry
       print('{}{}'.format('Sequence: ', seq))
       scan_folder_seq = os.path.join(scan_folder, seq, 'velodyne') #lidar scans
       pose_file = os.path.join(scan_folder, seq, 'poses.txt') # ground truth poses file
@@ -51,7 +55,8 @@ if __name__ == '__main__':
       residual_image_folder = os.path.join(scan_folder, seq, residual_image)
       visualization = 'visualization_' + str(num_last_n)
       visualization_folder = os.path.join(scan_folder, seq, visualization)
-  
+      if not os.path.exists(scan_folder_seq):
+        continue
       # specify the output folders
       #residual_image_folder = config['residual_image_folder']
       if not os.path.exists(residual_image_folder):

@@ -5,12 +5,12 @@
 
 # Inputs
 # the root of raw LiDAR scans
-scan_root: 'data/dataset/sequences'
+scan_root: '/disk/vanishing_data/ju878/CODA_for_Finn_sequences/sequences'
 # the root of mos predictions & semantic predictions and where the results are saved
-inference_root: 'data/inference'
+inference_root: '/disk/vanishing_data/ju878/log_finn/'
 
 # Outputs
-split: test  # choose from (train, valid, test)
+split: valid  # choose from (train, valid, test)
 #clean_scan_root: 'data'
 
 

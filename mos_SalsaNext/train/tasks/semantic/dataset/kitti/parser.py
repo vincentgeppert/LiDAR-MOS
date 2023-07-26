@@ -155,6 +155,9 @@ class SemanticKitti(Dataset):
       scan_path = os.path.join(self.root, seq, "velodyne")
       label_path = os.path.join(self.root, seq, "labels")
       
+      if not os.path.exists(os.path.join(self.root, seq, "velodyne")):
+        continue
+      
       if self.use_residual:
         for i in range(self.n_input_scans):
           folder_name = "residual_images_" + str(i+1)

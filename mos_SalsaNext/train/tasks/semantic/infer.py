@@ -104,25 +104,26 @@ if __name__ == '__main__':
     # create log folder
     try:
         FLAGS.log = os.path.join(FLAGS.log, 'SalsaNext_mos')
-        os.makedirs(FLAGS.log)
+        if not os.path.exists(FLAGS.log):
+            os.makedirs(FLAGS.log)
         #os.makedirs(os.path.join(FLAGS.log, "sequences"))
         if FLAGS.split == 'train':
             for seq in DATA["split"]["train"]:
-                seq = '{0:02d}'.format(int(seq)) #KITTI odometry
+                seq = '{0:04d}'.format(int(seq)) #KITTI odometry
                 #seq = '2013_05_28_drive_%04d_sync' %seq #KITTI-360
                 print("train", seq)
                 os.makedirs(os.path.join(FLAGS.log, seq))
                 os.makedirs(os.path.join(FLAGS.log, seq, "predictions"))
         if FLAGS.split == 'valid':
             for seq in DATA["split"]["valid"]:
-                seq = '{0:02d}'.format(int(seq)) #KITTI odometry
+                seq = '{0:04d}'.format(int(seq)) #KITTI odometry
                 #seq = '2013_05_28_drive_%04d_sync' %seq #KITTI-360
                 print("valid", seq)
                 os.makedirs(os.path.join(FLAGS.log, seq))
                 os.makedirs(os.path.join(FLAGS.log, seq, "predictions"))
         if FLAGS.split == 'test':
             for seq in DATA["split"]["test"]:
-                seq = '{0:02d}'.format(int(seq)) #KITTI odometry
+                seq = '{0:04d}'.format(int(seq)) #KITTI odometry
                 #seq = '2013_05_28_drive_%04d_sync' %seq #KITTI-360
                 print("test", seq)
                 os.makedirs(os.path.join(FLAGS.log, seq))

@@ -74,7 +74,7 @@ if __name__ == '__main__':
     print(data_yaml["split"]["train"])
     for seq in data_yaml["split"]["train"]:
       #seq = '2013_05_28_drive_%04d_sync' %seq #KITTI-360
-      seq = '{0:02d}'.format(int(seq))  # KITTI odometry
+      seq = '{0:04d}'.format(int(seq))  # KITTI odometry
       print("train", seq)
       if not os.path.exists(os.path.join(combined_results_root, seq)):
         os.makedirs(os.path.join(combined_results_root, seq))
@@ -84,7 +84,7 @@ if __name__ == '__main__':
   if split == 'valid':
     for seq in data_yaml["split"]["valid"]:
       #seq = '2013_05_28_drive_%04d_sync' %seq #KITTI-360
-      seq = '{0:02d}'.format(int(seq)) # KITTI odometry
+      seq = '{0:04d}'.format(int(seq)) # KITTI odometry
       print("valid", seq)
       if not os.path.exists(os.path.join(combined_results_root, seq)):
         os.makedirs(os.path.join(combined_results_root, seq))
@@ -94,7 +94,7 @@ if __name__ == '__main__':
   if split == 'test':
     for seq in data_yaml["split"]["test"]:
       #seq = '2013_05_28_drive_%04d_sync' %seq #KITTI-360
-      seq = '{0:02d}'.format(int(seq)) # KITTI odometry
+      seq = '{0:04d}'.format(int(seq)) # KITTI odometry
       print("test", seq)
       if not os.path.exists(os.path.join(combined_results_root, seq)):
         os.makedirs(os.path.join(combined_results_root, seq))

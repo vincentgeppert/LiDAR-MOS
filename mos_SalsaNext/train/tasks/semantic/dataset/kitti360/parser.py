@@ -152,7 +152,7 @@ class Kitti360(Dataset):
     # fill in with names, checking that all sequences are complete
     for seq in self.sequences:
       #seq = '2013_05_28_drive_%04d_sync' %seq #KITTI-360
-      seq = '{0:02d}'.format(int(seq)) #KITTI odometry
+      seq = '{0:04d}'.format(int(seq)) #KITTI odometry
 
       print("parsing seq {}".format(seq))
 
