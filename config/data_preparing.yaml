@@ -1,5 +1,5 @@
 debug: false
-inference_root: /disk/vanishing_data/ju878/log_finn/
+inference_root: /disk/vanishing_data/ju878/log_finn
 normalize: true
 num_frames: -1
 num_last_n_list:
